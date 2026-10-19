@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedding Planner</title>
+<style>
+/* Design tokens — single source of truth for colors/spacing/radius/shadow/fonts.
+   tools/app_template.html (the "simple" architecture) hand-syncs its own inline
+   :root block to these same names/values (see tests/test_app.py's token-drift
+   test) since it must stay single-file and can't @import this file. Change a
+   value here AND there, never one without the other. */
+/* Breakpoints (documented here, not as custom properties — media queries need
+   literal px): 480 = small phone, 680 = nav collapses to a top bar (see
+   01_components.css), 960 = wide desktop (two-column dashboard/workspace layouts
+   via .grid-2, see 01_components.css). */
+:root {
+  --color-bg: #FBF7F2;
+  --color-ink: #2E2326;
+  --color-accent: #A8506A;
+  --color-card: #fff;
+  --color-muted: #6f6266;
+  --color-border: #e6dcd6;
+  --color-danger: #B3434B;
+
+  /* Semantic feedback colors (banners, inline validation) — tinted background +
+     an ink-like text color, same pairing convention as --color-danger above. */
+  --color-success: #2F6B4F;
+  --color-success-bg: #E3F0E7;
+  --color-warning: #8A5A00;
+  --color-warning-bg: #FBF0D9;
+  --color-info: #2C5F8A;
+  --color-info-bg: #E4EEF5;
+  --color-error-bg: #F7E3E4;
+
+  /* Solid button-background colors. Deliberately FIXED — the same value in both
+     light and dark mode, unlike --color-accent/--color-danger above (which stay
+     theme-adaptive for foreground/decorative use: chart fills, icons, borders,
+     where lightening in dark mode is correct). A theme-adaptive color that gets
+     LIGHTER in dark mode is wrong for a solid button background carrying white
+     text — tests/test_app.py's contrast tests + validators/app_check.py's
+     check_color_contrast verify these two pairs hold >= 4.5:1 in both themes. */
+  --color-primary: #8E3B4F;
+  --color-on-primary: #fff;
+  --color-danger-strong: #B3434B;
+  --color-on-danger: #fff;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 6px rgba(0, 0, 0, .06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, .14);
+
+  /* Type scale. h1/h2/h3 below use these; .text-sm/.text-xs/.caption are utility
+     classes for secondary copy — see 01_components.css. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  /* Named after the same brand families tools/fonts/ ships (used in the guide
+     PDFs via tools/pdf_kit.py) — a browser with them installed renders on-brand;
+     everyone else falls back to a clean system stack. The TTFs themselves are
+     not embedded here (keeps the self-contained HTML small — see CLAUDE.md). */
+  --font-body: "Nunito Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Quicksand", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+:root[data-theme="dark"] {
+  --color-bg: #1D1619;
+  --color-ink: #F0E6E8;
+  --color-accent: #E0A0B2;
+  --color-card: #29202A;
+  --color-muted: #b3a5a9;
+  --color-border: #43343a;
+  --color-danger: #e58a92;
+
+  --color-success: #8FCBA8;
+  --color-success-bg: #1E3A2B;
+  --color-warning: #E8C067;
+  --color-warning-bg: #3A2F12;
+  --color-info: #8FC1E8;
+  --color-info-bg: #1C3246;
+  --color-error-bg: #3A1F21;
+
+  /* --color-primary/--color-on-primary/--color-danger-strong/--color-on-danger
+     intentionally NOT overridden here — see the base :root comment above. */
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-normal); background: var(--color-bg); color: var(--color-ink); }
+h1, h2, h3 { font-family: var(--font-heading); line-height: var(--leading-tight); margin: var(--space-2) 0 var(--space-1); }
+h1 { font-size: var(--text-2xl); }
+h2 { font-size: var(--text-xl); }
+h3 { font-size: var(--text-lg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* Structural layout + reusable component classes. Shares every color/spacing/radius
+   token with tools/app_template.html's inline <style> (see 00_tokens.css's header) —
+   keep both in sync, verified by tests/test_app.py's token-drift/component tests. */
+#app-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); }
+#app-controls { display: flex; gap: var(--space-2); }
+#app-body { display: flex; min-height: calc(100vh - 56px); }
+#view-nav { display: flex; flex-direction: column; gap: var(--space-1); width: 180px; padding: var(--space-4) var(--space-2); border-right: 1px solid var(--color-border); flex-shrink: 0; }
+#view-nav button { text-align: left; background: transparent; border: 0; padding: var(--space-3) var(--space-3); border-radius: var(--radius-sm); font: inherit; color: var(--color-ink); cursor: pointer; }
+#view-nav button[aria-current="page"] { background: var(--color-card); font-weight: 600; }
+#view-root { flex: 1; padding: var(--space-5) var(--space-5) 60px; max-width: 760px; }
+/* h1/h2/h3 sizing comes from 00_tokens.css's type scale. */
+p.sub { margin: 0 0 var(--space-5); color: var(--color-muted); font-size: var(--text-sm); }
+
+.card { background: var(--color-card); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-4); box-shadow: var(--shadow-sm); }
+.row { display: flex; gap: var(--space-2); }
+
+input[type=text], input[type=number], textarea {
+  flex: 1; min-width: 0; font: inherit; padding: 10px 12px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-card); color: var(--color-ink);
+}
+
+/* background/color use the FIXED --color-primary/--color-danger-strong pair (see
+   00_tokens.css) — not --color-accent/--color-danger, whose dark-mode-lightened
+   values drop white-text contrast well below WCAG AA when used as a solid fill. */
+button { font: inherit; padding: 10px 14px; border: 0; border-radius: var(--radius-sm); background: var(--color-primary); color: var(--color-on-primary); cursor: pointer; }
+button.ghost { background: transparent; color: var(--color-ink); border: 1px solid var(--color-border); }
+button.danger { background: var(--color-danger-strong); color: var(--color-on-danger); }
+
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+ul { list-style: none; padding: 0; margin: var(--space-3) 0 0; }
+li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 10px 0; border-top: 1px solid var(--color-border); }
+
+/* Uses the fixed --color-primary pair, same contrast reasoning as buttons above —
+   a persistent banner has the same white-text-on-solid-fill requirement. */
+#demo-banner { text-align: center; padding: var(--space-2); margin: 0; background: var(--color-primary); color: var(--color-on-primary); font-size: var(--text-sm); }
+#demo-banner[hidden] { display: none; }
+
+/* Empty-state: a single reusable pattern for "nothing here yet" sections. */
+.empty-state { text-align: center; padding: 40px var(--space-4); color: var(--color-muted); }
+.empty-state strong { display: block; color: var(--color-ink); margin-bottom: var(--space-1); }
+
+/* Toast/snackbar: transient feedback, dismissed by the caller via [hidden]. */
+.toast {
+  position: fixed; left: 50%; bottom: var(--space-4); transform: translateX(-50%);
+  background: var(--color-ink); color: var(--color-bg); padding: 10px var(--space-4);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); font-size: .9rem;
+}
+.toast[hidden] { display: none; }
+
+/* Banner/alert: persistent inline feedback (validation summaries, zone warnings),
+   distinct from the transient floating .toast above. One semantic variant class
+   required: success|warning|error|info. */
+.banner { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); font-size: var(--text-sm); margin-bottom: var(--space-4); }
+.banner.success { background: var(--color-success-bg); color: var(--color-success); }
+.banner.warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.banner.error { background: var(--color-error-bg); color: var(--color-danger); }
+.banner.info { background: var(--color-info-bg); color: var(--color-info); }
+
+/* Form field group: label + control + optional help text + error state. Wrap any
+   existing input/textarea/select in a .field; add .has-error plus a .field-error
+   element (role="alert" so screen readers announce it) when validation fails. */
+.field { margin-bottom: var(--space-4); }
+.field label { display: block; margin-bottom: 6px; font-weight: 600; font-size: var(--text-sm); }
+.field .help { display: block; margin-top: 4px; color: var(--color-muted); font-size: var(--text-xs); }
+.field.has-error input, .field.has-error textarea, .field.has-error select { border-color: var(--color-danger); }
+.field-error { display: block; margin-top: 4px; color: var(--color-danger); font-size: var(--text-xs); }
+select {
+  flex: 1; min-width: 0; font: inherit; padding: 10px 12px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-card); color: var(--color-ink);
+}
+
+/* Table: header row, row separators, a horizontal-scroll wrapper for narrow
+   screens so a wide table never breaks layout instead of silently clipping. */
+.table-scroll { overflow-x: auto; margin-bottom: var(--space-4); }
+table.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+table.table th { text-align: left; padding: var(--space-2) var(--space-3); color: var(--color-muted); font-weight: 600; border-bottom: 1px solid var(--color-border); }
+table.table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border); }
+table.table tbody tr:hover { background: var(--color-bg); }
+
+/* Tabs: role="tablist"/"tab"/"tabpanel" convention. Toggling is handled by
+   App.ui.initTabs(root) in main.js — this is presentation only. */
+.tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-4); }
+.tabs [role="tab"] { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: var(--space-2) var(--space-3); color: var(--color-muted); cursor: pointer; }
+.tabs [role="tab"][aria-selected="true"] { color: var(--color-ink); border-bottom-color: var(--color-primary); font-weight: 600; }
+[role="tabpanel"][hidden] { display: none; }
+
+/* Loading: a CSS-only spinner and a skeleton shimmer block. Both go static under
+   prefers-reduced-motion (see 00_tokens.css's global rule). */
+.spinner { width: 20px; height: 20px; border-radius: var(--radius-full); border: 2.5px solid var(--color-border); border-top-color: var(--color-primary); animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.skeleton { background: var(--color-border); border-radius: var(--radius-sm); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+
+/* Modal: native <dialog> — no extra JS library needed for open/close/backdrop.
+   .modal-header/.modal-body/.modal-footer are an optional structural convention
+   for anything beyond a one-line confirm. */
+dialog.modal { border: 0; border-radius: var(--radius-lg); padding: var(--space-5); max-width: 420px; width: 90%; box-shadow: var(--shadow-md); background: var(--color-card); color: var(--color-ink); }
+dialog.modal::backdrop { background: rgba(0, 0, 0, .4); }
+.modal-header { font-family: var(--font-heading); font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-3); }
+.modal-body { margin-bottom: var(--space-4); }
+.modal-footer { display: flex; justify-content: flex-end; gap: var(--space-2); }
+
+/* Accordion: native <details>/<summary> — Help/FAQ sections, no JS required. */
+details.accordion { border-bottom: 1px solid var(--color-border); padding: var(--space-3) 0; }
+details.accordion summary { cursor: pointer; font-weight: 600; }
+details.accordion[open] summary { color: var(--color-primary); }
+details.accordion .answer { margin-top: var(--space-2); color: var(--color-ink); }
+
+/* Layout utilities for dashboard/workspace views: .stack is the default vertical
+   flow (explicit for readability); .grid-2 goes two columns at >=680px. */
+.stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
+@media (min-width: 680px) {
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 680px) {
+  #app-body { flex-direction: column; }
+  #view-nav { flex-direction: row; width: auto; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--color-border); }
+  #view-root { max-width: none; padding: var(--space-4); }
+  .tabs { overflow-x: auto; }
+}
+
+
+/* Wedding-planner additions on top of the shared design system. Colors come from the
+   tokens in 00_tokens.css — no hard-coded hex here. */
+#app-title { font-family: var(--font-heading); font-size: var(--text-lg); color: var(--color-primary); }
+:root[data-theme="dark"] #app-title { color: var(--color-accent); }
+
+input[type=date], input[type=time], input[type=text], input[type=number], select {
+  width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); background: var(--color-card); color: var(--color-ink);
+}
+.field input, .field select { width: 100%; }
+input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--color-primary); flex-shrink: 0; margin: 0; }
+button.small { padding: 6px 10px; font-size: var(--text-sm); }
+.row.wrap { flex-wrap: wrap; }
+.caption { color: var(--color-muted); font-size: var(--text-xs); }
+.nowrap { white-space: nowrap; }
+.neg { color: var(--color-danger); font-weight: 600; }
+table.table input.cell-input { width: 7.5em; padding: 6px 8px; }
+table.table input.cell-input.invalid { border-color: var(--color-danger); }
+tr.row-over td { background: var(--color-error-bg); }
+tr.total-row td { font-weight: 700; border-top: 2px solid var(--color-border); }
+table.table td select { width: auto; padding: 6px 8px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.stat { background: var(--color-card); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat-label { font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: .04em; }
+.stat-value { font-family: var(--font-heading); font-size: var(--text-xl); color: var(--color-primary); overflow-wrap: anywhere; }
+:root[data-theme="dark"] .stat-value { color: var(--color-accent); }
+.stat.bad .stat-value { color: var(--color-danger); }
+.stat-sub { font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; }
+
+.badge { font-size: var(--text-xs); color: var(--color-muted); border: 1px solid var(--color-border); border-radius: var(--radius-full); padding: 2px 10px; white-space: nowrap; }
+label.check { display: flex; align-items: center; gap: var(--space-3); cursor: pointer; flex: 1; min-width: 0; }
+label.check.done span { text-decoration: line-through; color: var(--color-muted); }
+.progress { height: 10px; background: var(--color-border); border-radius: var(--radius-full); margin-top: var(--space-2); overflow: hidden; }
+.progress > span { display: block; height: 100%; background: var(--color-primary); }
+li { flex-wrap: wrap; }
+
+#print-area { display: none; }
+@media print {
+  body.printing #app, body.printing dialog { display: none !important; }
+  body.printing #print-area { display: block; padding: 0; color: #000; background: #fff; }
+  body.printing .table { font-size: 12pt; }
+  body.printing table.table th, body.printing table.table td { border-bottom: 1px solid #999; color: #000; }
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="app-header">
+    <strong id="app-title">Wedding Planner</strong>
+    <div id="app-controls">
+      <button id="themeToggle" type="button" class="ghost" aria-label="Toggle dark mode">&#9788;</button>
+      <button id="exportBtn" type="button" class="ghost">Export backup</button>
+      <button id="importBtn" type="button" class="ghost">Import backup</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+    </div>
+  </header>
+  <div id="app-body">
+    <nav id="view-nav" aria-label="Main navigation"></nav>
+    <main id="view-root" data-active-view=""></main>
+  </div>
+  <p id="demo-banner" hidden>Demo mode — some data and actions are limited. The full version is in your purchase.</p>
+</div>
+<script>
+window.APP_DEMO_MODE = true;
+
+/* Minimal hash router. Each module (app_src/modules/*.js) registers a view on
+ * App.views[id] = {navLabel, render(root)} and pushes id onto App.nav, in the order
+ * it should appear in the nav. render(root) MUST set root.dataset.activeView = id and
+ * replace root's content with that view's real markup (never just scroll to an anchor —
+ * validators/app_check.py's multi-view check clicks every nav item and asserts both
+ * data-active-view and the visible text actually change). */
+(function () {
+  window.App = window.App || { views: {}, nav: [] };
+
+  function show(id) {
+    var view = App.views[id];
+    if (!view) {
+      id = App.nav[0];
+      view = App.views[id];
+    }
+    if (!view) return;
+    view.render(document.getElementById('view-root'));
+    document.querySelectorAll('#view-nav [data-nav]').forEach(function (b) {
+      b.setAttribute('aria-current', b.dataset.nav === id ? 'page' : 'false');
+    });
+    if (location.hash !== '#' + id) location.hash = '#' + id;
+  }
+
+  function buildNav() {
+    var nav = document.getElementById('view-nav');
+    nav.innerHTML = '';
+    App.nav.forEach(function (id) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.nav = id;
+      b.textContent = App.views[id].navLabel;
+      b.addEventListener('click', function () { show(id); });
+      nav.appendChild(b);
+    });
+  }
+
+  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  window.AppRouter = {
+    init: function () {
+      buildNav();
+      show(location.hash.slice(1) || App.nav[0]);
+    },
+  };
+})();
+
+
+/* Shared helpers: safe DOM building (user-entered names are never parsed as HTML),
+ * money in whole cents, dates, ids, the starting budget split and checklist, and a
+ * print helper. Every view module below composes these. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+
+  /** h('div', {class, text, attrs:{}, on:{click}, dataset:{}}, ...children) */
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    var p = props || {};
+    Object.keys(p).forEach(function (k) {
+      var v = p[k];
+      if (v == null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k === 'on') Object.keys(v).forEach(function (ev) { el.addEventListener(ev, v[ev]); });
+      else if (k === 'dataset') Object.keys(v).forEach(function (d) { el.dataset[d] = v[d]; });
+      else if (k === 'attrs') Object.keys(v).forEach(function (a) { if (v[a] != null && v[a] !== false) el.setAttribute(a, v[a] === true ? '' : v[a]); });
+      else el[k] = v;
+    });
+    for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
+    return el;
+  }
+  function append(el, child) {
+    if (child == null || child === false) return;
+    if (Array.isArray(child)) { child.forEach(function (c) { append(el, c); }); return; }
+    el.appendChild(typeof child === 'string' || typeof child === 'number' ? document.createTextNode(String(child)) : child);
+  }
+
+  /* ---------- Money (whole cents) ---------- */
+  function currency() { return App.store.get('currency', 'USD'); }
+  function fmt(cents) {
+    var c = Math.round(cents || 0);
+    var whole = c % 100 === 0;
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency', currency: currency(),
+        minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2,
+      }).format(c / 100);
+    } catch (e) {
+      return (c / 100).toFixed(whole ? 0 : 2);
+    }
+  }
+  /** "1,234.50" / "1.234,50" / "12" -> cents, or null when it is not a number. */
+  function parseMoney(str) {
+    var s = String(str == null ? '' : str).replace(/[^\d.,-]/g, '');
+    if (!s || s === '-' || s === '.' || s === ',') return null;
+    var hasDot = s.indexOf('.') >= 0, hasComma = s.indexOf(',') >= 0;
+    if (hasDot && hasComma) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(/,/g, '');
+    } else if (hasComma) {
+      s = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, '');
+    }
+    var n = parseFloat(s);
+    return isFinite(n) ? Math.round(n * 100) : null;
+  }
+  function inputMoney(cents) {
+    if (!cents) return '';
+    var v = cents / 100;
+    return v % 1 === 0 ? String(v) : v.toFixed(2);
+  }
+
+  /* ---------- Dates ---------- */
+  function parseISO(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function today() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function daysUntil(iso) {
+    var d = parseISO(iso);
+    return d ? Math.round((d - today()) / 86400000) : null;
+  }
+  function fmtDate(d) {
+    try { return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(d); }
+    catch (e) { return d.toDateString(); }
+  }
+  function monthsBefore(iso, months) {
+    var d = parseISO(iso);
+    if (!d) return null;
+    return new Date(d.getFullYear(), d.getMonth() - months, d.getDate());
+  }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---------- Starting data (all of it is editable by the buyer) ---------- */
+  var BUDGET_SPLIT = [
+    ['Venue & catering', 45], ['Photo & video', 10], ['Attire & beauty', 9],
+    ['Flowers & decor', 8], ['Music & entertainment', 7], ['Rings', 3],
+    ['Stationery & invitations', 3], ['Officiant & legal', 2], ['Transport', 2],
+    ['Gifts & favors', 2], ['Miscellaneous & buffer', 9],
+  ];
+  /** [title, months before the wedding] */
+  var TASKS = [
+    ['Decide your total budget and who is contributing', 12], ['Draft a first guest list', 12], ['Pick a season and a rough date range', 12],
+    ['Book the venue', 10], ['Book a photographer / videographer', 10],
+    ['Book the caterer (if the venue does not include one)', 9], ['Start looking at attire', 9], ['Book the officiant', 9],
+    ['Order save-the-dates and invitations', 6], ['Book music or a DJ', 6], ['Book the florist', 6], ['Plan the honeymoon', 6],
+    ['Order attire', 4], ['Book transport', 4], ['Plan the order of the ceremony', 4],
+    ['Send invitations', 3], ['Arrange rooms for out-of-town guests', 3],
+    ['Choose the final menu', 2], ['Check the marriage license requirements where you are marrying', 2], ['Buy the rings', 2],
+    ['Confirm the final headcount with the caterer', 1], ['Make the seating plan', 1], ['Confirm arrival times with every vendor', 1], ['Write your vows', 1],
+    ['Pay the final vendor balances', 0], ['Give the day-of timeline to your wedding party', 0], ['Pack for the wedding day', 0],
+  ];
+  var TIMELINE = [
+    ['09:00', 'Hair and makeup begin', ''], ['12:00', 'Photographer arrives', ''], ['13:30', 'Get dressed', ''],
+    ['14:30', 'Guests arrive and are seated', ''], ['15:00', 'Ceremony', ''], ['15:45', 'Group photos', ''],
+    ['17:00', 'Reception begins', ''], ['18:00', 'Dinner', ''], ['19:30', 'First dance and speeches', ''], ['23:00', 'Last dance and send-off', ''],
+  ];
+
+  /** Splits `total` cents across the budget percentages; the cents always add back up exactly. */
+  function splitBudget(total) {
+    var out = [], used = 0;
+    BUDGET_SPLIT.forEach(function (row, i) {
+      var amt = i === BUDGET_SPLIT.length - 1 ? total - used : Math.round(total * row[1] / 100);
+      used += amt;
+      out.push({ id: uid(), name: row[0], est: amt, actual: 0, paid: 0 });
+    });
+    return out;
+  }
+
+  /* ---------- Small shared UI pieces ---------- */
+  function field(id, label, control, help) {
+    return h('div', { class: 'field' },
+      h('label', { attrs: { for: id }, text: label }), control,
+      help ? h('span', { class: 'help', text: help }) : null,
+      h('span', { class: 'field-error', attrs: { role: 'alert' } }));
+  }
+  function setError(fieldEl, message) {
+    fieldEl.classList.add('has-error');
+    fieldEl.querySelector('.field-error').textContent = message;
+    var c = fieldEl.querySelector('input,select');
+    if (c) { c.setAttribute('aria-invalid', 'true'); c.focus(); }
+  }
+  function clearErrors(root) {
+    root.querySelectorAll('.field.has-error').forEach(function (f) {
+      f.classList.remove('has-error');
+      f.querySelector('.field-error').textContent = '';
+      var c = f.querySelector('input,select');
+      if (c) c.removeAttribute('aria-invalid');
+    });
+  }
+  function banner(kind, text) { return h('div', { class: 'banner ' + kind, attrs: { role: kind === 'error' || kind === 'warning' ? 'alert' : 'status' }, text: text }); }
+  function stat(label, value, sub, tone) {
+    return h('div', { class: 'stat' + (tone ? ' ' + tone : '') },
+      h('span', { class: 'stat-label', text: label }), h('strong', { class: 'stat-value', text: value }),
+      sub ? h('span', { class: 'stat-sub', text: sub }) : null);
+  }
+  function emptyState(title, text) {
+    return h('div', { class: 'empty-state' }, h('strong', { text: title }), text ? h('span', { text: text }) : null);
+  }
+  function tableWrap(table) { return h('div', { class: 'table-scroll' }, table); }
+
+  /** Native <dialog> confirm. Resolves true on confirm. */
+  function confirmDialog(title, message, confirmLabel) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var dlg = h('dialog', { class: 'modal' });
+      function finish(v) { done = true; resolve(v); if (dlg.open) dlg.close(); }
+      dlg.appendChild(h('div', { class: 'modal-header', text: title }));
+      dlg.appendChild(h('div', { class: 'modal-body', text: message }));
+      dlg.appendChild(h('div', { class: 'modal-footer' },
+        h('button', { type: 'button', class: 'ghost', text: 'Cancel', on: { click: function () { finish(false); } } }),
+        h('button', { type: 'button', class: 'danger', text: confirmLabel || 'Confirm', on: { click: function () { finish(true); } } })));
+      dlg.addEventListener('close', function () { dlg.remove(); if (!done) resolve(false); });
+      document.body.appendChild(dlg);
+      dlg.showModal();
+    });
+  }
+
+  /** Prints just `title` + a copy of `node` (nothing else on the page). */
+  function printSheet(title, node) {
+    var old = document.getElementById('print-area');
+    if (old) old.remove();
+    var area = h('div', { id: 'print-area' }, h('h1', { text: title }), node.cloneNode(true));
+    document.body.appendChild(area);
+    document.body.classList.add('printing');
+    var cleaned = false;
+    function cleanup() {
+      if (cleaned) return;
+      cleaned = true;
+      document.body.classList.remove('printing');
+      area.remove();
+    }
+    window.addEventListener('afterprint', cleanup, { once: true });
+    setTimeout(cleanup, 60000);
+    window.print();
+  }
+
+  App.core = {
+    h: h, fmt: fmt, parseMoney: parseMoney, inputMoney: inputMoney,
+    parseISO: parseISO, today: today, daysUntil: daysUntil, fmtDate: fmtDate, monthsBefore: monthsBefore,
+    uid: uid, splitBudget: splitBudget, TASKS: TASKS, TIMELINE: TIMELINE, BUDGET_SPLIT: BUDGET_SPLIT,
+    field: field, setError: setError, clearErrors: clearErrors, banner: banner, stat: stat,
+    emptyState: emptyState, tableWrap: tableWrap, confirmDialog: confirmDialog, printSheet: printSheet,
+  };
+})(window);
+
+
+/* Data access + every computed number the app shows. Keeping the arithmetic in one
+ * place (all in whole cents / whole people) is what the audit's totals checks rely on. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core;
+
+  var D = App.data = {
+    wedding: function () { return App.store.get('wedding', { setupDone: false, date: '', budget: 0, guests: 0 }); },
+    saveWedding: function (w) { App.store.set('wedding', w); },
+    list: function (key) { return App.store.get(key, []); },
+    save: function (key, arr) { App.store.set(key, arr); },
+
+    budgetTotals: function () {
+      var cats = D.list('budget'), t = { est: 0, actual: 0, paid: 0, over: [] };
+      cats.forEach(function (c) {
+        t.est += c.est || 0; t.actual += c.actual || 0; t.paid += c.paid || 0;
+        if ((c.actual || 0) > (c.est || 0)) t.over.push(c);
+      });
+      var budget = D.wedding().budget || 0;
+      t.budget = budget;
+      t.remaining = budget - t.actual;          // what is left of the total budget after real spending
+      t.planGap = t.est - budget;               // > 0 when the plan adds up to more than the total budget
+      return t;
+    },
+
+    guestTotals: function () {
+      var gs = D.list('guests'), t = { entries: gs.length, invited: 0, yes: 0, no: 0, pending: 0, tables: {} };
+      gs.forEach(function (x) {
+        var n = x.party || 1;
+        t.invited += n;
+        if (x.rsvp === 'yes') t.yes += n; else if (x.rsvp === 'no') t.no += n; else t.pending += n;
+        var label = (x.table || '').trim();
+        if (label && x.rsvp !== 'no') t.tables[label] = (t.tables[label] || 0) + n;
+      });
+      return t;
+    },
+
+    vendorTotals: function () {
+      var vs = D.list('vendors'), t = { quote: 0, depositDue: 0, depositPaid: 0, next: null };
+      vs.forEach(function (v) {
+        t.quote += v.quote || 0;
+        if (v.depositPaid) t.depositPaid += v.deposit || 0; else t.depositDue += v.deposit || 0;
+        if (!v.depositPaid && v.due && (!t.next || v.due < t.next.due)) t.next = v;
+      });
+      return t;
+    },
+
+    taskTotals: function () {
+      var ts = D.list('tasks'), done = 0;
+      ts.forEach(function (x) { if (x.done) done += 1; });
+      return { total: ts.length, done: done };
+    },
+
+    /** Months-out groups, soonest-to-do first (largest months-out first). */
+    taskGroups: function () {
+      var groups = {};
+      D.list('tasks').forEach(function (t) { (groups[t.months] = groups[t.months] || []).push(t); });
+      return Object.keys(groups).map(Number).sort(function (a, b) { return b - a; })
+        .map(function (m) { return { months: m, tasks: groups[m] }; });
+    },
+
+    monthsLabel: function (m) {
+      if (m >= 12) return '12 or more months before';
+      if (m === 0) return 'Wedding week';
+      return m + (m === 1 ? ' month' : ' months') + ' before';
+    },
+
+    CURRENCIES: ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NZD', 'CHF', 'SEK', 'NOK', 'DKK', 'MAD', 'AED', 'ZAR', 'INR', 'MXN', 'BRL', 'JPY'],
+  };
+})(window);
+
+
+/* Overview: first-launch guided setup, then the countdown and the numbers that matter. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+
+  function renderSetup(root) {
+    var date = h('input', { type: 'date', id: 'setupDate' });
+    var budget = h('input', { type: 'text', id: 'setupBudget', attrs: { inputmode: 'decimal', placeholder: 'e.g. 15000' } });
+    var guests = h('input', { type: 'number', id: 'setupGuests', attrs: { min: '1', max: '2000', placeholder: 'e.g. 80' } });
+    var fDate = C.field('setupDate', 'Wedding date', date, 'A rough date is fine — you can change it in Settings.');
+    var fBudget = C.field('setupBudget', 'Total budget', budget, 'Everything you plan to spend. We split it across typical categories; change any amount afterwards.');
+    var fGuests = C.field('setupGuests', 'Expected number of guests', guests);
+    var form = h('div', { class: 'card' },
+      h('h2', { text: 'Start your plan in five minutes' }),
+      h('p', { class: 'sub', text: 'Three answers fill in your budget categories and a month-by-month checklist. Everything stays on this device.' }),
+      fDate, fBudget, fGuests,
+      h('div', { class: 'row' },
+        h('button', { type: 'button', id: 'setupBtn', text: 'Create my plan' }),
+        h('button', { type: 'button', id: 'skipSetupBtn', class: 'ghost', text: 'Start from a blank plan' })));
+    root.appendChild(form);
+
+    form.querySelector('#setupBtn').addEventListener('click', function () {
+      C.clearErrors(form);
+      var d = date.value, total = C.parseMoney(budget.value), n = parseInt(guests.value, 10);
+      if (!C.parseISO(d)) return C.setError(fDate, 'Pick the wedding date.');
+      if (total == null || total <= 0) return C.setError(fBudget, 'Enter your total budget as a number above zero.');
+      if (!(n >= 1 && n <= 2000)) return C.setError(fGuests, 'Enter a guest count between 1 and 2000.');
+      D.saveWedding({ setupDone: true, date: d, budget: total, guests: n });
+      D.save('budget', C.splitBudget(total));
+      D.save('tasks', C.TASKS.map(function (t) { return { id: C.uid(), title: t[0], months: t[1], done: false }; }));
+      App.views.overview.render(root);
+    });
+    form.querySelector('#skipSetupBtn').addEventListener('click', function () {
+      D.saveWedding({ setupDone: true, date: '', budget: 0, guests: 0 });
+      App.views.overview.render(root);
+    });
+  }
+
+  function countdown(w) {
+    var n = C.daysUntil(w.date);
+    if (n == null) return C.stat('Days to go', '—', 'Add your wedding date in Settings');
+    if (n > 1) return C.stat('Days to go', String(n), C.fmtDate(C.parseISO(w.date)));
+    if (n === 1) return C.stat('Days to go', '1', 'Tomorrow');
+    if (n === 0) return C.stat('Days to go', 'Today', 'Congratulations!');
+    return C.stat('Wedding date', 'Passed', C.fmtDate(C.parseISO(w.date)));
+  }
+
+  function renderDash(root) {
+    var w = D.wedding(), b = D.budgetTotals(), gt = D.guestTotals(), vt = D.vendorTotals(), tt = D.taskTotals();
+    root.appendChild(h('p', { class: 'sub', text: 'Your wedding at a glance.' }));
+
+    var warnings = [];
+    if (b.over.length) warnings.push(b.over.length + (b.over.length === 1 ? ' budget category is' : ' budget categories are') + ' over its estimate.');
+    if (b.budget > 0 && b.planGap > 0) warnings.push('Your category estimates add up to ' + C.fmt(b.planGap) + ' more than your total budget.');
+    warnings.forEach(function (t) { root.appendChild(C.banner('warning', t)); });
+
+    var hasBudget = b.budget > 0;
+    root.appendChild(h('div', { class: 'stat-grid' },
+      countdown(w),
+      C.stat('Budget left', hasBudget ? C.fmt(b.remaining) : '—', hasBudget ? 'of ' + C.fmt(b.budget) + ' total · ' + C.fmt(b.actual) + ' spent' : 'Add a total budget in Settings', hasBudget && b.remaining < 0 ? 'bad' : ''),
+      C.stat('Guests confirmed', String(gt.yes), gt.invited ? 'of ' + gt.invited + ' invited · ' + gt.pending + ' waiting to reply' : 'No guests added yet'),
+      C.stat('Checklist', tt.total ? tt.done + ' / ' + tt.total : '—', tt.total ? 'tasks done' : 'No tasks yet'),
+      C.stat('Deposits still due', C.fmt(vt.depositDue), vt.next ? 'Next: ' + vt.next.name + (vt.next.due ? ' by ' + C.fmtDate(C.parseISO(vt.next.due)) : '') : 'No deposits due')));
+
+    var next = D.list('tasks').filter(function (t) { return !t.done; })
+      .sort(function (a, b2) { return b2.months - a.months; }).slice(0, 5);
+    var card = h('div', { class: 'card' }, h('h2', { text: 'Next up' }));
+    if (!next.length) {
+      card.appendChild(C.emptyState(tt.total ? 'Everything is checked off' : 'No tasks yet', tt.total ? 'Nice work.' : 'Add tasks in the Checklist view.'));
+    } else {
+      var ul = h('ul');
+      next.forEach(function (t) {
+        var cb = h('input', { type: 'checkbox', attrs: { 'aria-label': 'Mark done: ' + t.title } });
+        cb.addEventListener('change', function () {
+          var all = D.list('tasks');
+          all.forEach(function (x) { if (x.id === t.id) x.done = cb.checked; });
+          D.save('tasks', all);
+          App.views.overview.render(root);
+        });
+        ul.appendChild(h('li', null, h('label', { class: 'check' }, cb, h('span', { text: t.title })),
+          h('span', { class: 'badge', text: D.monthsLabel(t.months) })));
+      });
+      card.appendChild(ul);
+    }
+    root.appendChild(card);
+  }
+
+  App.views.overview = {
+    navLabel: 'Overview',
+    render: function (root) {
+      root.dataset.activeView = 'overview';
+      root.innerHTML = '';
+      root.appendChild(h('h1', { text: 'Overview' }));
+      if (D.wedding().setupDone) renderDash(root); else renderSetup(root);
+    },
+  };
+  App.nav.push('overview');
+})(window);
+
+
+/* Budget: categories with estimated / actual / paid, a left-to-spend column and an
+ * over-budget warning (approved opportunity: overspend warnings). */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+
+  function moneyInput(cat, key, label, root) {
+    var inp = h('input', { type: 'text', class: 'cell-input', value: C.inputMoney(cat[key]), attrs: { inputmode: 'decimal', 'aria-label': label + ' for ' + cat.name } });
+    inp.addEventListener('change', function () {
+      var v = inp.value.trim() === '' ? 0 : C.parseMoney(inp.value);
+      if (v == null || v < 0) { inp.value = C.inputMoney(cat[key]); inp.classList.add('invalid'); return; }
+      var all = D.list('budget');
+      all.forEach(function (c) { if (c.id === cat.id) c[key] = v; });
+      D.save('budget', all);
+      App.views.budget.render(root);
+    });
+    return inp;
+  }
+
+  App.views.budget = {
+    navLabel: 'Budget',
+    render: function (root) {
+      root.dataset.activeView = 'budget';
+      root.innerHTML = '';
+      var cats = D.list('budget'), t = D.budgetTotals();
+      root.appendChild(h('h1', { text: 'Budget' }));
+      root.appendChild(h('p', { class: 'sub', text: 'Estimate each category, then enter what you actually spend and what you have already paid.' }));
+
+      if (t.over.length) root.appendChild(C.banner('warning', 'Over budget in: ' + t.over.map(function (c) { return c.name; }).join(', ') + '.'));
+      if (t.budget > 0 && t.planGap > 0) root.appendChild(C.banner('warning', 'Your estimates add up to ' + C.fmt(t.planGap) + ' more than your total budget of ' + C.fmt(t.budget) + '.'));
+
+      root.appendChild(h('div', { class: 'stat-grid' },
+        C.stat('Total budget', t.budget ? C.fmt(t.budget) : '—', t.budget ? '' : 'Set it in Settings'),
+        C.stat('Estimated', C.fmt(t.est)), C.stat('Actual spent', C.fmt(t.actual)),
+        C.stat('Paid so far', C.fmt(t.paid)),
+        C.stat('Budget left', t.budget ? C.fmt(t.remaining) : '—', 'total budget minus actual', t.budget && t.remaining < 0 ? 'bad' : '')));
+
+      var card = h('div', { class: 'card' });
+      if (!cats.length) {
+        card.appendChild(C.emptyState('No categories yet', 'Add your first category below, or finish the setup on the Overview view.'));
+      } else {
+        var tbody = h('tbody');
+        cats.forEach(function (c) {
+          var left = (c.est || 0) - (c.actual || 0);
+          var del = h('button', { type: 'button', class: 'ghost small', text: 'Remove', attrs: { 'aria-label': 'Remove ' + c.name } });
+          del.addEventListener('click', function () {
+            C.confirmDialog('Remove "' + c.name + '"?', 'This removes the category and its amounts.', 'Remove').then(function (ok) {
+              if (!ok) return;
+              D.save('budget', D.list('budget').filter(function (x) { return x.id !== c.id; }));
+              App.views.budget.render(root);
+            });
+          });
+          tbody.appendChild(h('tr', { class: left < 0 ? 'row-over' : '' },
+            h('td', { text: c.name }),
+            h('td', null, moneyInput(c, 'est', 'Estimate', root)),
+            h('td', null, moneyInput(c, 'actual', 'Actual', root)),
+            h('td', null, moneyInput(c, 'paid', 'Paid', root)),
+            h('td', { class: left < 0 ? 'neg' : '', text: left < 0 ? 'Over by ' + C.fmt(-left) : C.fmt(left) + ' left' }),
+            h('td', null, del)));
+        });
+        tbody.appendChild(h('tr', { class: 'total-row' },
+          h('td', { text: 'Total' }), h('td', { text: C.fmt(t.est) }), h('td', { text: C.fmt(t.actual) }),
+          h('td', { text: C.fmt(t.paid) }), h('td', { text: C.fmt(t.est - t.actual) + ' left' }), h('td')));
+        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+          h('thead', null, h('tr', null, ['Category', 'Estimated', 'Actual', 'Paid', 'Left to spend', ''].map(function (x) { return h('th', { text: x }); }))),
+          tbody)));
+      }
+      root.appendChild(card);
+
+      var name = h('input', { type: 'text', id: 'catName', attrs: { maxlength: '60' } });
+      var est = h('input', { type: 'text', id: 'catEst', attrs: { inputmode: 'decimal' } });
+      var fName = C.field('catName', 'Category name', name), fEst = C.field('catEst', 'Estimated amount', est);
+      var add = h('div', { class: 'card' }, h('h2', { text: 'Add a category' }), fName, fEst,
+        h('button', { type: 'button', id: 'addCatBtn', text: 'Add category' }));
+      add.querySelector('#addCatBtn').addEventListener('click', function () {
+        C.clearErrors(add);
+        var nm = name.value.trim(), v = est.value.trim() === '' ? 0 : C.parseMoney(est.value);
+        if (!nm) return C.setError(fName, 'Give the category a name.');
+        if (v == null || v < 0) return C.setError(fEst, 'Enter the estimate as a number, or leave it empty.');
+        var all = D.list('budget');
+        all.push({ id: C.uid(), name: nm, est: v, actual: 0, paid: 0 });
+        D.save('budget', all);
+        App.views.budget.render(root);
+      });
+      root.appendChild(add);
+    },
+  };
+  App.nav.push('budget');
+})(window);
+
+
+/* Guests: RSVP status, party size, meal and table number; headcounts and per-table
+ * counts; print. The public demo caps the list (DEMO_GUEST_LIMIT) — the one gated feature. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+  var DEMO_GUEST_LIMIT = 10;
+  var RSVP = [['pending', 'Waiting'], ['yes', 'Coming'], ['no', 'Declined']];
+
+  function select(options, value, label) {
+    var s = h('select', { attrs: { 'aria-label': label } });
+    options.forEach(function (o) { s.appendChild(h('option', { value: o[0], text: o[1], selected: o[0] === value })); });
+    return s;
+  }
+  function rsvpLabel(v) { return (RSVP.filter(function (r) { return r[0] === v; })[0] || RSVP[0])[1]; }
+
+  App.views.guests = {
+    navLabel: 'Guests',
+    render: function (root) {
+      root.dataset.activeView = 'guests';
+      root.innerHTML = '';
+      var guests = D.list('guests'), t = D.guestTotals();
+      root.appendChild(h('h1', { text: 'Guests' }));
+      root.appendChild(h('p', { class: 'sub', text: 'Who is invited, who is coming, what they eat and where they sit.' }));
+      if (window.APP_DEMO_MODE) root.appendChild(C.banner('info', 'Demo: you can add up to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'));
+
+      var expected = D.wedding().guests;
+      root.appendChild(h('div', { class: 'stat-grid' },
+        C.stat('Invited', String(t.invited), expected ? 'of about ' + expected + ' planned' : 'people in total'),
+        C.stat('Coming', String(t.yes), 'confirmed headcount'),
+        C.stat('Waiting', String(t.pending), 'no reply yet'),
+        C.stat('Declined', String(t.no))));
+
+      var name = h('input', { type: 'text', id: 'guestName', attrs: { maxlength: '80', autocomplete: 'off' } });
+      var party = h('input', { type: 'number', id: 'guestParty', value: '1', attrs: { min: '1', max: '20' } });
+      var rsvp = select(RSVP, 'pending', 'RSVP'); rsvp.id = 'guestRsvp';
+      var meal = h('input', { type: 'text', id: 'guestMeal', attrs: { maxlength: '40' } });
+      var table = h('input', { type: 'text', id: 'guestTable', attrs: { maxlength: '20' } });
+      var fName = C.field('guestName', 'Guest name', name), fParty = C.field('guestParty', 'People in this party', party);
+      var form = h('div', { class: 'card' }, h('h2', { text: 'Add a guest' }), fName,
+        h('div', { class: 'grid-2' }, fParty, C.field('guestRsvp', 'RSVP', rsvp)),
+        h('div', { class: 'grid-2' }, C.field('guestMeal', 'Meal choice', meal, 'Optional'), C.field('guestTable', 'Table number or name', table, 'Optional')),
+        h('button', { type: 'button', id: 'addGuestBtn', text: 'Add guest' }));
+      form.querySelector('#addGuestBtn').addEventListener('click', function () {
+        C.clearErrors(form);
+        var nm = name.value.trim(), n = parseInt(party.value, 10);
+        if (!nm) return C.setError(fName, 'Enter the guest’s name.');
+        if (!(n >= 1 && n <= 20)) return C.setError(fParty, 'Enter between 1 and 20 people.');
+        if (window.APP_DEMO_MODE && guests.length >= DEMO_GUEST_LIMIT) {
+          root.insertBefore(C.banner('warning', 'The demo is limited to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'), form);
+          return;
+        }
+        var all = D.list('guests');
+        all.push({ id: C.uid(), name: nm, party: n, rsvp: rsvp.value, meal: meal.value.trim(), table: table.value.trim() });
+        D.save('guests', all);
+        App.views.guests.render(root);
+      });
+      root.appendChild(form);
+
+      var listCard = h('div', { class: 'card' }, h('h2', { text: 'Guest list' }));
+      if (!guests.length) {
+        listCard.appendChild(C.emptyState('No guests yet', 'Add your first guest above.'));
+      } else {
+        var tbody = h('tbody');
+        guests.forEach(function (x) {
+          var sel = select(RSVP, x.rsvp || 'pending', 'RSVP for ' + x.name);
+          sel.addEventListener('change', function () {
+            var all = D.list('guests');
+            all.forEach(function (y) { if (y.id === x.id) y.rsvp = sel.value; });
+            D.save('guests', all);
+            App.views.guests.render(root);
+          });
+          var del = h('button', { type: 'button', class: 'ghost small', text: 'Remove', attrs: { 'aria-label': 'Remove ' + x.name } });
+          del.addEventListener('click', function () {
+            D.save('guests', D.list('guests').filter(function (y) { return y.id !== x.id; }));
+            App.views.guests.render(root);
+          });
+          tbody.appendChild(h('tr', null, h('td', { text: x.name }), h('td', { text: String(x.party || 1) }), h('td', null, sel),
+            h('td', { text: x.meal || '—' }), h('td', { text: x.table || '—' }), h('td', { class: 'no-print' }, del)));
+        });
+        var tbl = h('table', { class: 'table', id: 'guestTable-list' },
+          h('thead', null, h('tr', null, ['Name', 'People', 'RSVP', 'Meal', 'Table', ''].map(function (x) { return h('th', { text: x }); }))), tbody);
+        listCard.appendChild(C.tableWrap(tbl));
+        listCard.appendChild(h('button', { type: 'button', id: 'printGuestsBtn', class: 'ghost', text: 'Print guest list', on: { click: function () {
+          // Printable copy: plain text for RSVP instead of dropdowns, no Remove column.
+          var pt = h('table', { class: 'table' },
+            h('thead', null, h('tr', null, ['Name', 'People', 'RSVP', 'Meal', 'Table'].map(function (x) { return h('th', { text: x }); }))),
+            h('tbody', null, D.list('guests').map(function (x) {
+              return h('tr', null, h('td', { text: x.name }), h('td', { text: String(x.party || 1) }), h('td', { text: rsvpLabel(x.rsvp) }),
+                h('td', { text: x.meal || '' }), h('td', { text: x.table || '' }));
+            })));
+          C.printSheet('Guest list — ' + t.yes + ' coming, ' + t.pending + ' waiting', pt);
+        } } }));
+      }
+      root.appendChild(listCard);
+
+      var tableNames = Object.keys(t.tables).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
+      var tcard = h('div', { class: 'card' }, h('h2', { text: 'People per table' }));
+      if (!tableNames.length) tcard.appendChild(C.emptyState('No tables assigned', 'Give guests a table number and the headcount per table appears here.'));
+      else {
+        var ul = h('ul');
+        tableNames.forEach(function (n) { ul.appendChild(h('li', null, h('span', { text: 'Table ' + n }), h('strong', { text: String(t.tables[n]) }))); });
+        tcard.appendChild(ul);
+      }
+      root.appendChild(tcard);
+    },
+  };
+  App.nav.push('guests');
+})(window);
+
+
+/* Vendors: contact, quote, deposit and the date it is due. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+
+  App.views.vendors = {
+    navLabel: 'Vendors',
+    render: function (root) {
+      root.dataset.activeView = 'vendors';
+      root.innerHTML = '';
+      var vendors = D.list('vendors'), t = D.vendorTotals();
+      root.appendChild(h('h1', { text: 'Vendors' }));
+      root.appendChild(h('p', { class: 'sub', text: 'Everyone you are hiring, what they quoted and which deposits are still due.' }));
+
+      root.appendChild(h('div', { class: 'stat-grid' },
+        C.stat('Total quotes', C.fmt(t.quote), vendors.length + (vendors.length === 1 ? ' vendor' : ' vendors')),
+        C.stat('Deposits paid', C.fmt(t.depositPaid)),
+        C.stat('Deposits still due', C.fmt(t.depositDue), t.next ? 'Next: ' + t.next.name : 'None due')));
+
+      var name = h('input', { type: 'text', id: 'vendorName', attrs: { maxlength: '80' } });
+      var kind = h('input', { type: 'text', id: 'vendorKind', attrs: { maxlength: '40' } });
+      var contact = h('input', { type: 'text', id: 'vendorContact', attrs: { maxlength: '120' } });
+      var quote = h('input', { type: 'text', id: 'vendorQuote', attrs: { inputmode: 'decimal' } });
+      var deposit = h('input', { type: 'text', id: 'vendorDeposit', attrs: { inputmode: 'decimal' } });
+      var due = h('input', { type: 'date', id: 'vendorDue' });
+      var fName = C.field('vendorName', 'Vendor name', name), fQuote = C.field('vendorQuote', 'Quoted price', quote), fDep = C.field('vendorDeposit', 'Deposit amount', deposit);
+      var form = h('div', { class: 'card' }, h('h2', { text: 'Add a vendor' }), fName,
+        h('div', { class: 'grid-2' }, C.field('vendorKind', 'What they do', kind, 'For example photographer, caterer'), C.field('vendorContact', 'Phone or email', contact)),
+        h('div', { class: 'grid-2' }, fQuote, fDep),
+        C.field('vendorDue', 'Deposit due date', due, 'Optional'),
+        h('button', { type: 'button', id: 'addVendorBtn', text: 'Add vendor' }));
+      form.querySelector('#addVendorBtn').addEventListener('click', function () {
+        C.clearErrors(form);
+        var nm = name.value.trim();
+        var q = quote.value.trim() === '' ? 0 : C.parseMoney(quote.value);
+        var d = deposit.value.trim() === '' ? 0 : C.parseMoney(deposit.value);
+        if (!nm) return C.setError(fName, 'Enter the vendor’s name.');
+        if (q == null || q < 0) return C.setError(fQuote, 'Enter the quote as a number, or leave it empty.');
+        if (d == null || d < 0) return C.setError(fDep, 'Enter the deposit as a number, or leave it empty.');
+        var all = D.list('vendors');
+        all.push({ id: C.uid(), name: nm, kind: kind.value.trim(), contact: contact.value.trim(), quote: q, deposit: d, due: C.parseISO(due.value) ? due.value : '', depositPaid: false });
+        D.save('vendors', all);
+        App.views.vendors.render(root);
+      });
+      root.appendChild(form);
+
+      var card = h('div', { class: 'card' }, h('h2', { text: 'Your vendors' }));
+      if (!vendors.length) {
+        card.appendChild(C.emptyState('No vendors yet', 'Add the venue, photographer or caterer above.'));
+      } else {
+        var tbody = h('tbody');
+        vendors.slice().sort(function (a, b) { return (a.due || '9999') < (b.due || '9999') ? -1 : 1; }).forEach(function (v) {
+          var paid = h('input', { type: 'checkbox', checked: !!v.depositPaid, attrs: { 'aria-label': 'Deposit paid for ' + v.name } });
+          paid.addEventListener('change', function () {
+            var all = D.list('vendors');
+            all.forEach(function (x) { if (x.id === v.id) x.depositPaid = paid.checked; });
+            D.save('vendors', all);
+            App.views.vendors.render(root);
+          });
+          var del = h('button', { type: 'button', class: 'ghost small', text: 'Remove', attrs: { 'aria-label': 'Remove ' + v.name } });
+          del.addEventListener('click', function () {
+            D.save('vendors', D.list('vendors').filter(function (x) { return x.id !== v.id; }));
+            App.views.vendors.render(root);
+          });
+          var overdue = !v.depositPaid && v.due && C.daysUntil(v.due) < 0;
+          tbody.appendChild(h('tr', null,
+            h('td', null, h('strong', { text: v.name }), v.kind ? h('div', { class: 'caption', text: v.kind }) : null),
+            h('td', { text: v.contact || '—' }), h('td', { text: v.quote ? C.fmt(v.quote) : '—' }),
+            h('td', { text: v.deposit ? C.fmt(v.deposit) : '—' }),
+            h('td', { class: overdue ? 'neg' : '', text: v.due ? C.fmtDate(C.parseISO(v.due)) + (overdue ? ' (overdue)' : '') : '—' }),
+            h('td', null, paid), h('td', null, del)));
+        });
+        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+          h('thead', null, h('tr', null, ['Vendor', 'Contact', 'Quote', 'Deposit', 'Due', 'Paid', ''].map(function (x) { return h('th', { text: x }); }))),
+          tbody)));
+      }
+      root.appendChild(card);
+    },
+  };
+  App.nav.push('vendors');
+})(window);
+
+
+/* Checklist: tasks grouped by months before the wedding, with a "do by" date once a
+ * wedding date is set. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+  var MONTH_CHOICES = [12, 9, 6, 4, 3, 2, 1, 0];
+
+  App.views.checklist = {
+    navLabel: 'Checklist',
+    render: function (root) {
+      root.dataset.activeView = 'checklist';
+      root.innerHTML = '';
+      var tt = D.taskTotals(), w = D.wedding();
+      root.appendChild(h('h1', { text: 'Checklist' }));
+      root.appendChild(h('p', { class: 'sub', text: 'What to do and when, counted back from your wedding date.' }));
+
+      var pct = tt.total ? Math.round(tt.done * 100 / tt.total) : 0;
+      root.appendChild(h('div', { class: 'card' },
+        h('strong', { text: tt.total ? tt.done + ' of ' + tt.total + ' tasks done' : 'No tasks yet' }),
+        h('div', { class: 'progress', attrs: { role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct), 'aria-label': 'Checklist progress' } },
+          h('span', { style: 'width:' + pct + '%' }))));
+      if (!w.date) root.appendChild(C.banner('info', 'Add your wedding date in Settings to see a do-by date for each group.'));
+
+      D.taskGroups().forEach(function (grp) {
+        var when = w.date ? C.monthsBefore(w.date, grp.months) : null;
+        var card = h('div', { class: 'card' },
+          h('h2', { text: D.monthsLabel(grp.months) }),
+          when ? h('p', { class: 'sub', text: 'Aim to finish by ' + C.fmtDate(when) }) : null);
+        var ul = h('ul');
+        grp.tasks.forEach(function (t) {
+          var cb = h('input', { type: 'checkbox', checked: !!t.done, attrs: { 'aria-label': t.title } });
+          cb.addEventListener('change', function () {
+            var all = D.list('tasks');
+            all.forEach(function (x) { if (x.id === t.id) x.done = cb.checked; });
+            D.save('tasks', all);
+            App.views.checklist.render(root);
+          });
+          var del = h('button', { type: 'button', class: 'ghost small', text: 'Remove', attrs: { 'aria-label': 'Remove task: ' + t.title } });
+          del.addEventListener('click', function () {
+            D.save('tasks', D.list('tasks').filter(function (x) { return x.id !== t.id; }));
+            App.views.checklist.render(root);
+          });
+          ul.appendChild(h('li', null, h('label', { class: 'check' + (t.done ? ' done' : '') }, cb, h('span', { text: t.title })), del));
+        });
+        card.appendChild(ul);
+        root.appendChild(card);
+      });
+
+      var title = h('input', { type: 'text', id: 'taskTitle', attrs: { maxlength: '120' } });
+      var months = h('select', { id: 'taskMonths', attrs: { 'aria-label': 'When' } });
+      MONTH_CHOICES.forEach(function (m) { months.appendChild(h('option', { value: String(m), text: D.monthsLabel(m), selected: m === 3 })); });
+      var fTitle = C.field('taskTitle', 'New task', title);
+      var add = h('div', { class: 'card' }, h('h2', { text: 'Add your own task' }), fTitle, C.field('taskMonths', 'When', months),
+        h('button', { type: 'button', id: 'addTaskBtn', text: 'Add task' }));
+      add.querySelector('#addTaskBtn').addEventListener('click', function () {
+        C.clearErrors(add);
+        var tl = title.value.trim();
+        if (!tl) return C.setError(fTitle, 'Describe the task.');
+        var all = D.list('tasks');
+        all.push({ id: C.uid(), title: tl, months: parseInt(months.value, 10), done: false });
+        D.save('tasks', all);
+        App.views.checklist.render(root);
+      });
+      root.appendChild(add);
+    },
+  };
+  App.nav.push('checklist');
+})(window);
+
+
+/* Day-of timeline: timed events kept in order, plus a print layout to hand to the
+ * wedding party and vendors. */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+
+  function fmtTime(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+    if (!m) return hhmm || '';
+    try { return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, +m[1], +m[2])); }
+    catch (e) { return hhmm; }
+  }
+  function sorted() { return D.list('events').slice().sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; }); }
+
+  App.views.dayof = {
+    navLabel: 'Day-of',
+    render: function (root) {
+      root.dataset.activeView = 'dayof';
+      root.innerHTML = '';
+      var events = sorted(), w = D.wedding();
+      root.appendChild(h('h1', { text: 'Day-of timeline' }));
+      root.appendChild(h('p', { class: 'sub', text: 'The wedding day, hour by hour. Events stay in time order.' }));
+
+      var time = h('input', { type: 'time', id: 'eventTime' });
+      var title = h('input', { type: 'text', id: 'eventTitle', attrs: { maxlength: '100' } });
+      var note = h('input', { type: 'text', id: 'eventNote', attrs: { maxlength: '160' } });
+      var fTime = C.field('eventTime', 'Time', time), fTitle = C.field('eventTitle', 'What happens', title);
+      var form = h('div', { class: 'card' }, h('h2', { text: 'Add an event' }), h('div', { class: 'grid-2' }, fTime, fTitle),
+        C.field('eventNote', 'Note or who is responsible', note, 'Optional'),
+        h('div', { class: 'row' }, h('button', { type: 'button', id: 'addEventBtn', text: 'Add event' }),
+          events.length ? null : h('button', { type: 'button', id: 'seedEventsBtn', class: 'ghost', text: 'Start from a typical timeline' })));
+      form.querySelector('#addEventBtn').addEventListener('click', function () {
+        C.clearErrors(form);
+        if (!/^\d{1,2}:\d{2}$/.test(time.value)) return C.setError(fTime, 'Pick a time.');
+        if (!title.value.trim()) return C.setError(fTitle, 'Say what happens.');
+        var all = D.list('events');
+        all.push({ id: C.uid(), time: time.value.length === 4 ? '0' + time.value : time.value, title: title.value.trim(), note: note.value.trim() });
+        D.save('events', all);
+        App.views.dayof.render(root);
+      });
+      var seed = form.querySelector('#seedEventsBtn');
+      if (seed) seed.addEventListener('click', function () {
+        D.save('events', C.TIMELINE.map(function (e) { return { id: C.uid(), time: e[0], title: e[1], note: e[2] }; }));
+        App.views.dayof.render(root);
+      });
+      root.appendChild(form);
+
+      var card = h('div', { class: 'card' }, h('h2', { text: 'Timeline' }));
+      if (!events.length) {
+        card.appendChild(C.emptyState('No events yet', 'Add the first event, or start from a typical timeline and edit it.'));
+      } else {
+        var tbody = h('tbody');
+        events.forEach(function (e) {
+          var del = h('button', { type: 'button', class: 'ghost small', text: 'Remove', attrs: { 'aria-label': 'Remove ' + e.title } });
+          del.addEventListener('click', function () {
+            D.save('events', D.list('events').filter(function (x) { return x.id !== e.id; }));
+            App.views.dayof.render(root);
+          });
+          tbody.appendChild(h('tr', null, h('td', { class: 'nowrap', text: fmtTime(e.time) }), h('td', { text: e.title }), h('td', { text: e.note || '' }), h('td', null, del)));
+        });
+        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+          h('thead', null, h('tr', null, ['Time', 'Event', 'Note', ''].map(function (x) { return h('th', { text: x }); }))), tbody)));
+        card.appendChild(h('button', { type: 'button', id: 'printTimelineBtn', class: 'ghost', text: 'Print timeline', on: { click: function () {
+          var pt = h('table', { class: 'table' },
+            h('thead', null, h('tr', null, ['Time', 'Event', 'Note'].map(function (x) { return h('th', { text: x }); }))),
+            h('tbody', null, sorted().map(function (e) { return h('tr', null, h('td', { text: fmtTime(e.time) }), h('td', { text: e.title }), h('td', { text: e.note || '' })); })));
+          C.printSheet('Wedding day timeline' + (w.date ? ' — ' + C.fmtDate(C.parseISO(w.date)) : ''), pt);
+        } } }));
+      }
+      root.appendChild(card);
+    },
+  };
+  App.nav.push('dayof');
+})(window);
+
+
+/* Settings: wedding details, display (currency + light/dark), and data (backup,
+ * restore, reset). Tabs follow the shared role=tablist convention (App.ui.initTabs). */
+(function (g) {
+  var App = g.App = g.App || { views: {}, nav: [] };
+  var C = App.core, D = App.data, h = C.h;
+
+  function tab(id, label, selected) {
+    return h('button', { type: 'button', id: 'tab-' + id, attrs: { role: 'tab', 'aria-controls': 'panel-' + id, 'aria-selected': selected ? 'true' : 'false' }, text: label });
+  }
+  function panel(id, hidden) {
+    return h('div', { id: 'panel-' + id, attrs: { role: 'tabpanel', 'aria-labelledby': 'tab-' + id }, hidden: !!hidden });
+  }
+
+  App.views.settings = {
+    navLabel: 'Settings',
+    render: function (root) {
+      root.dataset.activeView = 'settings';
+      root.innerHTML = '';
+      var w = D.wedding();
+      root.appendChild(h('h1', { text: 'Settings' }));
+      root.appendChild(h('p', { class: 'sub', text: 'Your wedding details, how the app looks, and your data. Everything stays on this device.' }));
+      root.appendChild(h('div', { class: 'tabs', attrs: { role: 'tablist' } }, tab('wedding', 'Wedding', true), tab('display', 'Display', false), tab('data', 'Your data', false)));
+
+      /* --- Wedding --- */
+      var pW = panel('wedding', false);
+      var date = h('input', { type: 'date', id: 'setDate', value: w.date || '' });
+      var budget = h('input', { type: 'text', id: 'setBudget', value: C.inputMoney(w.budget), attrs: { inputmode: 'decimal' } });
+      var guests = h('input', { type: 'number', id: 'setGuests', value: w.guests ? String(w.guests) : '', attrs: { min: '0', max: '2000' } });
+      var fDate = C.field('setDate', 'Wedding date', date), fBudget = C.field('setBudget', 'Total budget', budget, 'Changing this does not rewrite your category estimates.'), fGuests = C.field('setGuests', 'Expected number of guests', guests);
+      pW.appendChild(fDate); pW.appendChild(fBudget); pW.appendChild(fGuests);
+      var msg = h('div');
+      pW.appendChild(h('button', { type: 'button', id: 'saveDetailsBtn', text: 'Save details', on: { click: function () {
+        C.clearErrors(pW); msg.innerHTML = '';
+        var b = budget.value.trim() === '' ? 0 : C.parseMoney(budget.value);
+        var n = guests.value.trim() === '' ? 0 : parseInt(guests.value, 10);
+        if (date.value && !C.parseISO(date.value)) return C.setError(fDate, 'Pick a valid date.');
+        if (b == null || b < 0) return C.setError(fBudget, 'Enter the budget as a number.');
+        if (!(n >= 0 && n <= 2000)) return C.setError(fGuests, 'Enter a guest count between 0 and 2000.');
+        D.saveWedding({ setupDone: true, date: date.value, budget: b, guests: n });
+        msg.appendChild(C.banner('success', 'Saved.'));
+      } } }));
+      pW.appendChild(msg);
+      root.appendChild(pW);
+
+      /* --- Display --- */
+      var pD = panel('display', true);
+      var cur = h('select', { id: 'setCurrency', attrs: { 'aria-label': 'Currency' } });
+      D.CURRENCIES.forEach(function (c) { cur.appendChild(h('option', { value: c, text: c, selected: c === App.store.get('currency', 'USD') })); });
+      cur.addEventListener('change', function () { App.store.set('currency', cur.value); });
+      pD.appendChild(C.field('setCurrency', 'Currency', cur, 'Only changes how amounts are shown.'));
+      var themeBtn = h('button', { type: 'button', id: 'setThemeBtn', class: 'ghost' });
+      function themeLabel() { themeBtn.textContent = App.store.get('theme', 'light') === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'; }
+      themeLabel();
+      themeBtn.addEventListener('click', function () {
+        var next = App.store.get('theme', 'light') === 'dark' ? 'light' : 'dark';
+        App.store.set('theme', next);
+        document.documentElement.setAttribute('data-theme', next);
+        themeLabel();
+      });
+      pD.appendChild(h('div', { class: 'field' }, h('label', { text: 'Appearance' }), themeBtn));
+      root.appendChild(pD);
+
+      /* --- Data --- */
+      var pDa = panel('data', true);
+      pDa.appendChild(h('p', { text: 'There is no account. Your plan lives in this browser. Save a backup file to move to another device or to keep a copy.' }));
+      pDa.appendChild(h('div', { class: 'row wrap' },
+        h('button', { type: 'button', id: 'settingsExportBtn', text: 'Export backup', on: { click: function () { document.getElementById('exportBtn').click(); } } }),
+        h('button', { type: 'button', id: 'settingsImportBtn', class: 'ghost', text: 'Import backup', on: { click: function () { document.getElementById('importBtn').click(); } } })));
+      var counts = [['Budget categories', D.list('budget').length], ['Guests', D.list('guests').length], ['Vendors', D.list('vendors').length],
+        ['Checklist tasks', D.list('tasks').length], ['Timeline events', D.list('events').length]];
+      pDa.appendChild(C.tableWrap(h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', { text: 'Saved on this device' }), h('th', { text: 'Count' }))),
+        h('tbody', null, counts.map(function (r) { return h('tr', null, h('td', { text: r[0] }), h('td', { text: String(r[1]) })); })))));
+      pDa.appendChild(C.banner('warning', 'Resetting deletes your whole plan from this device. Export a backup first if you might want it back.'));
+      pDa.appendChild(h('button', { type: 'button', id: 'resetBtn', class: 'danger', text: 'Reset all data', on: { click: function () {
+        C.confirmDialog('Reset everything?', 'This deletes your budget, guests, vendors, checklist and timeline from this device.', 'Delete everything').then(function (ok) {
+          if (!ok) return;
+          ['wedding', 'budget', 'guests', 'vendors', 'tasks', 'events'].forEach(function (k) { App.store.set(k, k === 'wedding' ? { setupDone: false, date: '', budget: 0, guests: 0 } : []); });
+          location.hash = '#overview';
+          AppRouter.init();
+        });
+      } } }));
+      root.appendChild(pDa);
+
+      App.ui.initTabs(root);
+    },
+  };
+  App.nav.push('settings');
+})(window);
+
+
+/* Orchestration: shared store (single localStorage blob, same backup-friendly pattern as
+ * tools/app_template.html), theme toggle, export/import, demo-mode banner, router init.
+ * Runs last, after every view module in app_src/modules/ has registered itself. */
+(function () {
+  var KEY = 'app-state-v1';
+
+  function load() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY));
+      return s && typeof s === 'object' ? s : {};
+    } catch (e) { return {}; }
+  }
+  function save(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = load();
+  window.App = window.App || { views: {}, nav: [] };
+  App.store = {
+    get: function (key, fallback) { return key in state ? state[key] : fallback; },
+    set: function (key, value) { state[key] = value; save(state); },
+    all: function () { return state; },
+  };
+
+  /* Shared UI helpers any view's render(root) can call after building its markup.
+   * initTabs wires up the role="tablist"/"tab"/"tabpanel" convention (see
+   * styles/01_components.css's .tabs): click a tab, show its panel, hide the
+   * others. Pure DOM wiring — presentation lives entirely in CSS. */
+  App.ui = {
+    initTabs: function (root) {
+      var tabs = root.querySelectorAll('[role="tab"]');
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var panelId = tab.getAttribute('aria-controls');
+          tabs.forEach(function (t) { t.setAttribute('aria-selected', 'false'); });
+          root.querySelectorAll('[role="tabpanel"]').forEach(function (p) { p.hidden = true; });
+          tab.setAttribute('aria-selected', 'true');
+          var panel = document.getElementById(panelId);
+          if (panel) panel.hidden = false;
+        });
+      });
+    },
+  };
+
+  function applyTheme() {
+    var theme = App.store.get('theme', 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  applyTheme();
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    App.store.set('theme', App.store.get('theme', 'light') === 'dark' ? 'light' : 'dark');
+    applyTheme();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'backup.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  document.getElementById('importBtn').addEventListener('click', function () {
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var s = JSON.parse(r.result);
+        if (s && typeof s === 'object') {
+          state = s;
+          save(state);
+          applyTheme();
+          AppRouter.init();
+        } else {
+          alert('This file is not a valid backup.');
+        }
+      } catch (err) {
+        alert('This file is not a valid backup.');
+      }
+    };
+    r.readAsText(f);
+  });
+
+  if (window.APP_DEMO_MODE) {
+    document.getElementById('demo-banner').hidden = false;
+  }
+
+  AppRouter.init();
+})();
+
+</script>
+</body>
+</html>
