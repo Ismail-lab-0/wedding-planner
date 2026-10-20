@@ -65,7 +65,7 @@
           h('thead', null, h('tr', null, ['Category', 'Estimated', 'Actual', 'Paid', 'Left to spend', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
-      root.appendChild(card);
+      var main = h('div', { class: 'main' }, card);
 
       var name = h('input', { type: 'text', id: 'catName', attrs: { maxlength: '60' } });
       var est = h('input', { type: 'text', id: 'catEst', attrs: { inputmode: 'decimal' } });
@@ -82,7 +82,7 @@
         D.save('budget', all);
         App.views.budget.render(root);
       });
-      root.appendChild(add);
+      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), main));
     },
   };
   App.nav.push('budget');

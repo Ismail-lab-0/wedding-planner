@@ -21,6 +21,7 @@
           h('span', { style: 'width:' + pct + '%' }))));
       if (!w.date) root.appendChild(C.banner('info', 'Add your wedding date in Settings to see a do-by date for each group.'));
 
+      var cols = h('div', { class: 'cols-2' });
       D.taskGroups().forEach(function (grp) {
         var when = w.date ? C.monthsBefore(w.date, grp.months) : null;
         var card = h('div', { class: 'card' },
@@ -43,7 +44,7 @@
           ul.appendChild(h('li', null, h('label', { class: 'check' + (t.done ? ' done' : '') }, cb, h('span', { text: t.title })), del));
         });
         card.appendChild(ul);
-        root.appendChild(card);
+        cols.appendChild(card);
       });
 
       var title = h('input', { type: 'text', id: 'taskTitle', attrs: { maxlength: '120' } });
@@ -61,7 +62,7 @@
         D.save('tasks', all);
         App.views.checklist.render(root);
       });
-      root.appendChild(add);
+      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), h('div', { class: 'main' }, cols)));
     },
   };
   App.nav.push('checklist');

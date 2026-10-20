@@ -42,7 +42,7 @@
         D.save('vendors', all);
         App.views.vendors.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var card = h('div', { class: 'card' }, h('h2', { text: 'Your vendors' }));
       if (!vendors.length) {
@@ -74,7 +74,7 @@
           h('thead', null, h('tr', null, ['Vendor', 'Contact', 'Quote', 'Deposit', 'Due', 'Paid', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
-      root.appendChild(card);
+      root.appendChild(h('div', { class: 'split' }, side, h('div', { class: 'main' }, card)));
     },
   };
   App.nav.push('vendors');

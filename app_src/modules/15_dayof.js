@@ -43,7 +43,7 @@
         D.save('events', C.TIMELINE.map(function (e) { return { id: C.uid(), time: e[0], title: e[1], note: e[2] }; }));
         App.views.dayof.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var card = h('div', { class: 'card' }, h('h2', { text: 'Timeline' }));
       if (!events.length) {
@@ -67,7 +67,7 @@
           C.printSheet('Wedding day timeline' + (w.date ? ' — ' + C.fmtDate(C.parseISO(w.date)) : ''), pt);
         } } }));
       }
-      root.appendChild(card);
+      root.appendChild(h('div', { class: 'split' }, side, h('div', { class: 'main' }, card)));
     },
   };
   App.nav.push('dayof');

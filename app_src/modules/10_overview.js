@@ -82,7 +82,24 @@
       });
       card.appendChild(ul);
     }
-    root.appendChild(card);
+    var cats = D.list('budget');
+    var bcard = h('div', { class: 'card' }, h('h2', { text: 'Budget by category' }));
+    if (!cats.length) bcard.appendChild(C.emptyState('No categories yet', 'Finish the setup or add categories in Budget.'));
+    else {
+      var maxv = cats.reduce(function (m, c) { return Math.max(m, c.est || 0, c.actual || 0); }, 1);
+      var ul2 = h('ul', { class: 'bars' });
+      cats.forEach(function (c) {
+        var over = (c.actual || 0) > (c.est || 0);
+        ul2.appendChild(h('li', null,
+          h('div', { class: 'bar-row' },
+            h('div', { class: 'bar-head' }, h('span', { text: c.name }), h('span', { class: over ? 'neg' : 'caption', text: C.fmt(c.actual || 0) + ' of ' + C.fmt(c.est || 0) })),
+            h('div', { class: 'bar' + (over ? ' over' : ''), attrs: { role: 'img', 'aria-label': c.name + ': ' + C.fmt(c.actual || 0) + ' spent of ' + C.fmt(c.est || 0) } },
+              h('span', { class: 'est', style: 'width:' + Math.round((c.est || 0) * 100 / maxv) + '%' }),
+              h('span', { class: 'act', style: 'width:' + Math.round((c.actual || 0) * 100 / maxv) + '%' })))));
+      });
+      bcard.appendChild(ul2);
+    }
+    root.appendChild(h('div', { class: 'grid-2 top' }, card, bcard));
   }
 
   App.views.overview = {

@@ -245,8 +245,6 @@ details.accordion .answer { margin-top: var(--space-2); color: var(--color-ink);
 
 /* Wedding-planner additions on top of the shared design system. Colors come from the
    tokens in 00_tokens.css — no hard-coded hex here. */
-#app-title { font-family: var(--font-heading); font-size: var(--text-lg); color: var(--color-primary); }
-:root[data-theme="dark"] #app-title { color: var(--color-accent); }
 
 input[type=date], input[type=time], input[type=text], input[type=number], select {
   width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--color-border);
@@ -288,18 +286,91 @@ li { flex-wrap: wrap; }
   body.printing table.table th, body.printing table.table td { border-bottom: 1px solid #999; color: #000; }
 }
 
+
+/* ---------- Header: logo, menu toggle, icon actions ---------- */
+#app-header { position: sticky; top: 0; z-index: 20; background: var(--color-bg); gap: var(--space-3); min-height: 60px; }
+#brand { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin-right: auto; }
+#brand-logo { flex-shrink: 0; }
+#app-title { font-family: var(--font-heading); font-size: var(--text-lg); color: var(--color-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-theme="dark"] #app-title { color: var(--color-accent); }
+#app-controls { display: flex; align-items: center; gap: var(--space-2); }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 40px; height: 40px; padding: 0 10px; background: transparent; color: var(--color-ink); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.icon-btn:hover { background: var(--color-card); }
+.icon-btn .label { font-size: var(--text-sm); }
+#menuToggle { display: none; }
+
+/* ---------- Desktop: use the whole width ---------- */
+#view-nav { position: sticky; top: 61px; align-self: flex-start; white-space: nowrap; }
 #view-nav button { white-space: nowrap; }
+#view-root { max-width: 1480px; width: 100%; min-width: 0; }
+.split { display: grid; grid-template-columns: 1fr; gap: var(--space-4); align-items: start; }
+.split > .main, .split > .side { min-width: 0; }
+.cols-2 { display: block; }
+.grid-2.top { align-items: start; }
+.bars { margin: 0; }
+.bars li { display: block; padding: var(--space-2) 0; }
+.bar-head { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-sm); margin-bottom: 4px; }
+.bar { position: relative; height: 8px; background: var(--color-border); border-radius: var(--radius-full); overflow: hidden; }
+.bar .est { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-border); border-right: 2px solid var(--color-muted); }
+.bar .act { position: absolute; left: 0; top: 0; bottom: 0; background: var(--color-primary); border-radius: var(--radius-full); }
+.bar.over .act { background: var(--color-danger-strong); }
+@media (min-width: 981px) {
+  .split { grid-template-columns: minmax(300px, 380px) 1fr; }
+  .split > .side { position: sticky; top: 76px; }
+  .cols-2 { column-count: 2; column-gap: var(--space-4); }
+  .cols-2 > .card { break-inside: avoid; }
+  #view-root { padding: var(--space-5) var(--space-6) 60px; }
+}
+@media (min-width: 681px) and (max-width: 980px) {
+  .split { grid-template-columns: 1fr; }
+}
+
+/* ---------- Phone: drop-down menu, compact header ---------- */
+@media (max-width: 680px) {
+  #menuToggle { display: inline-flex; }
+  #app-header { padding: var(--space-2) var(--space-3); min-height: 56px; gap: var(--space-2); }
+  #app-controls { gap: var(--space-1); }
+  #app-controls .label { display: none; }
+  .icon-btn { min-width: 38px; height: 38px; padding: 0 8px; }
+  #app-title { font-size: var(--text-base); }
+  #view-nav { display: none; position: fixed; left: 0; right: 0; top: 57px; z-index: 19; flex-direction: column; width: auto; max-height: calc(100vh - 57px); overflow-y: auto;
+    background: var(--color-card); border: 0; border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-md); padding: var(--space-2); }
+  body.menu-open #view-nav { display: flex; }
+  #view-nav button { padding: 14px var(--space-3); font-size: var(--text-base); }
+}
+@media (max-width: 360px) { #app-title { display: none; } }
+
+@media (min-width: 681px) { #view-nav { min-height: calc(100vh - 61px); } }
 
 </style>
 </head>
 <body>
 <div id="app">
   <header id="app-header">
-    <strong id="app-title">Wedding Planner</strong>
+    <button id="menuToggle" type="button" class="icon-btn" data-nav-toggle aria-label="Open menu" aria-expanded="false" aria-controls="view-nav">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div id="brand">
+      <svg id="brand-logo" viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+        <rect width="40" height="40" rx="11" fill="var(--color-primary)"/>
+        <circle cx="15.5" cy="21" r="8" fill="none" stroke="#FBF7F2" stroke-width="2.6"/>
+        <circle cx="24.5" cy="21" r="8" fill="none" stroke="#F2C9D3" stroke-width="2.6"/>
+        <path d="M20 8.5l1.6 2.5-1.6 2.5-1.6-2.5z" fill="#FBF7F2"/>
+      </svg>
+      <strong id="app-title">Wedding Planner</strong>
+    </div>
     <div id="app-controls">
-      <button id="themeToggle" type="button" class="ghost" aria-label="Toggle dark mode">&#9788;</button>
-      <button id="exportBtn" type="button" class="ghost">Export backup</button>
-      <button id="importBtn" type="button" class="ghost">Import backup</button>
+      <button id="themeToggle" type="button" class="icon-btn" aria-label="Toggle dark mode" title="Light / dark">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+      </button>
+      <button id="exportBtn" type="button" class="icon-btn" aria-label="Export backup" title="Export backup">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 19.5h15"/></svg>
+        <span class="label">Export</span>
+      </button>
+      <button id="importBtn" type="button" class="icon-btn" aria-label="Import backup" title="Import backup">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M4.5 19.5h15"/></svg>
+        <span class="label">Import</span>
+      </button>
       <input id="importFile" type="file" accept="application/json" hidden>
     </div>
   </header>
@@ -333,6 +404,7 @@ window.APP_DEMO_MODE = true;
       b.setAttribute('aria-current', b.dataset.nav === id ? 'page' : 'false');
     });
     if (location.hash !== '#' + id) location.hash = '#' + id;
+    if (App.ui && App.ui.closeMenu) App.ui.closeMenu();
   }
 
   function buildNav() {
@@ -348,7 +420,13 @@ window.APP_DEMO_MODE = true;
     });
   }
 
-  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  // show() itself sets location.hash, which fires hashchange a moment later. Only re-render
+  // when the hash points at a DIFFERENT view (back/forward, typed URL) — otherwise that echo
+  // re-renders the current view and wipes anything the user has just started typing.
+  window.addEventListener('hashchange', function () {
+    var id = location.hash.slice(1);
+    if (document.getElementById('view-root').dataset.activeView !== id) show(id);
+  });
   window.AppRouter = {
     init: function () {
       buildNav();
@@ -713,7 +791,24 @@ window.APP_DEMO_MODE = true;
       });
       card.appendChild(ul);
     }
-    root.appendChild(card);
+    var cats = D.list('budget');
+    var bcard = h('div', { class: 'card' }, h('h2', { text: 'Budget by category' }));
+    if (!cats.length) bcard.appendChild(C.emptyState('No categories yet', 'Finish the setup or add categories in Budget.'));
+    else {
+      var maxv = cats.reduce(function (m, c) { return Math.max(m, c.est || 0, c.actual || 0); }, 1);
+      var ul2 = h('ul', { class: 'bars' });
+      cats.forEach(function (c) {
+        var over = (c.actual || 0) > (c.est || 0);
+        ul2.appendChild(h('li', null,
+          h('div', { class: 'bar-row' },
+            h('div', { class: 'bar-head' }, h('span', { text: c.name }), h('span', { class: over ? 'neg' : 'caption', text: C.fmt(c.actual || 0) + ' of ' + C.fmt(c.est || 0) })),
+            h('div', { class: 'bar' + (over ? ' over' : ''), attrs: { role: 'img', 'aria-label': c.name + ': ' + C.fmt(c.actual || 0) + ' spent of ' + C.fmt(c.est || 0) } },
+              h('span', { class: 'est', style: 'width:' + Math.round((c.est || 0) * 100 / maxv) + '%' }),
+              h('span', { class: 'act', style: 'width:' + Math.round((c.actual || 0) * 100 / maxv) + '%' })))));
+      });
+      bcard.appendChild(ul2);
+    }
+    root.appendChild(h('div', { class: 'grid-2 top' }, card, bcard));
   }
 
   App.views.overview = {
@@ -796,7 +891,7 @@ window.APP_DEMO_MODE = true;
           h('thead', null, h('tr', null, ['Category', 'Estimated', 'Actual', 'Paid', 'Left to spend', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
-      root.appendChild(card);
+      var main = h('div', { class: 'main' }, card);
 
       var name = h('input', { type: 'text', id: 'catName', attrs: { maxlength: '60' } });
       var est = h('input', { type: 'text', id: 'catEst', attrs: { inputmode: 'decimal' } });
@@ -813,7 +908,7 @@ window.APP_DEMO_MODE = true;
         D.save('budget', all);
         App.views.budget.render(root);
       });
-      root.appendChild(add);
+      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), main));
     },
   };
   App.nav.push('budget');
@@ -868,7 +963,7 @@ window.APP_DEMO_MODE = true;
         if (!nm) return C.setError(fName, 'Enter the guest’s name.');
         if (!(n >= 1 && n <= 20)) return C.setError(fParty, 'Enter between 1 and 20 people.');
         if (window.APP_DEMO_MODE && guests.length >= DEMO_GUEST_LIMIT) {
-          root.insertBefore(C.banner('warning', 'The demo is limited to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'), form);
+          form.parentNode.insertBefore(C.banner('warning', 'The demo is limited to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'), form);
           return;
         }
         var all = D.list('guests');
@@ -876,7 +971,7 @@ window.APP_DEMO_MODE = true;
         D.save('guests', all);
         App.views.guests.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var listCard = h('div', { class: 'card' }, h('h2', { text: 'Guest list' }));
       if (!guests.length) {
@@ -913,7 +1008,7 @@ window.APP_DEMO_MODE = true;
           C.printSheet('Guest list — ' + t.yes + ' coming, ' + t.pending + ' waiting', pt);
         } } }));
       }
-      root.appendChild(listCard);
+      var main = h('div', { class: 'main' }, listCard);
 
       var tableNames = Object.keys(t.tables).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
       var tcard = h('div', { class: 'card' }, h('h2', { text: 'People per table' }));
@@ -923,7 +1018,8 @@ window.APP_DEMO_MODE = true;
         tableNames.forEach(function (n) { ul.appendChild(h('li', null, h('span', { text: 'Table ' + n }), h('strong', { text: String(t.tables[n]) }))); });
         tcard.appendChild(ul);
       }
-      root.appendChild(tcard);
+      side.appendChild(tcard);
+      root.appendChild(h('div', { class: 'split' }, side, main));
     },
   };
   App.nav.push('guests');
@@ -974,7 +1070,7 @@ window.APP_DEMO_MODE = true;
         D.save('vendors', all);
         App.views.vendors.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var card = h('div', { class: 'card' }, h('h2', { text: 'Your vendors' }));
       if (!vendors.length) {
@@ -1006,7 +1102,7 @@ window.APP_DEMO_MODE = true;
           h('thead', null, h('tr', null, ['Vendor', 'Contact', 'Quote', 'Deposit', 'Due', 'Paid', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
-      root.appendChild(card);
+      root.appendChild(h('div', { class: 'split' }, side, h('div', { class: 'main' }, card)));
     },
   };
   App.nav.push('vendors');
@@ -1036,6 +1132,7 @@ window.APP_DEMO_MODE = true;
           h('span', { style: 'width:' + pct + '%' }))));
       if (!w.date) root.appendChild(C.banner('info', 'Add your wedding date in Settings to see a do-by date for each group.'));
 
+      var cols = h('div', { class: 'cols-2' });
       D.taskGroups().forEach(function (grp) {
         var when = w.date ? C.monthsBefore(w.date, grp.months) : null;
         var card = h('div', { class: 'card' },
@@ -1058,7 +1155,7 @@ window.APP_DEMO_MODE = true;
           ul.appendChild(h('li', null, h('label', { class: 'check' + (t.done ? ' done' : '') }, cb, h('span', { text: t.title })), del));
         });
         card.appendChild(ul);
-        root.appendChild(card);
+        cols.appendChild(card);
       });
 
       var title = h('input', { type: 'text', id: 'taskTitle', attrs: { maxlength: '120' } });
@@ -1076,7 +1173,7 @@ window.APP_DEMO_MODE = true;
         D.save('tasks', all);
         App.views.checklist.render(root);
       });
-      root.appendChild(add);
+      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), h('div', { class: 'main' }, cols)));
     },
   };
   App.nav.push('checklist');
@@ -1128,7 +1225,7 @@ window.APP_DEMO_MODE = true;
         D.save('events', C.TIMELINE.map(function (e) { return { id: C.uid(), time: e[0], title: e[1], note: e[2] }; }));
         App.views.dayof.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var card = h('div', { class: 'card' }, h('h2', { text: 'Timeline' }));
       if (!events.length) {
@@ -1152,7 +1249,7 @@ window.APP_DEMO_MODE = true;
           C.printSheet('Wedding day timeline' + (w.date ? ' — ' + C.fmtDate(C.parseISO(w.date)) : ''), pt);
         } } }));
       }
-      root.appendChild(card);
+      root.appendChild(h('div', { class: 'split' }, side, h('div', { class: 'main' }, card)));
     },
   };
   App.nav.push('dayof');
@@ -1292,6 +1389,24 @@ window.APP_DEMO_MODE = true;
       });
     },
   };
+
+  /* Mobile menu: the nav collapses into a drop-down under the header below 680px. */
+  var menuBtn = document.getElementById('menuToggle');
+  App.ui.closeMenu = function () {
+    document.body.classList.remove('menu-open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.setAttribute('aria-label', 'Open menu');
+  };
+  menuBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = document.body.classList.toggle('menu-open');
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  document.addEventListener('click', function (e) {
+    if (document.body.classList.contains('menu-open') && !e.target.closest('#view-nav')) App.ui.closeMenu();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') App.ui.closeMenu(); });
 
   function applyTheme() {
     var theme = App.store.get('theme', 'light');

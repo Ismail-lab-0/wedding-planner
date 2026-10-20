@@ -19,6 +19,7 @@
       b.setAttribute('aria-current', b.dataset.nav === id ? 'page' : 'false');
     });
     if (location.hash !== '#' + id) location.hash = '#' + id;
+    if (App.ui && App.ui.closeMenu) App.ui.closeMenu();
   }
 
   function buildNav() {
@@ -34,7 +35,13 @@
     });
   }
 
-  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  // show() itself sets location.hash, which fires hashchange a moment later. Only re-render
+  // when the hash points at a DIFFERENT view (back/forward, typed URL) — otherwise that echo
+  // re-renders the current view and wipes anything the user has just started typing.
+  window.addEventListener('hashchange', function () {
+    var id = location.hash.slice(1);
+    if (document.getElementById('view-root').dataset.activeView !== id) show(id);
+  });
   window.AppRouter = {
     init: function () {
       buildNav();

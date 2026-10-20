@@ -9,11 +9,30 @@
 <body>
 <div id="app">
   <header id="app-header">
-    <strong id="app-title">__TITLE__</strong>
+    <button id="menuToggle" type="button" class="icon-btn" data-nav-toggle aria-label="Open menu" aria-expanded="false" aria-controls="view-nav">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div id="brand">
+      <svg id="brand-logo" viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+        <rect width="40" height="40" rx="11" fill="var(--color-primary)"/>
+        <circle cx="15.5" cy="21" r="8" fill="none" stroke="#FBF7F2" stroke-width="2.6"/>
+        <circle cx="24.5" cy="21" r="8" fill="none" stroke="#F2C9D3" stroke-width="2.6"/>
+        <path d="M20 8.5l1.6 2.5-1.6 2.5-1.6-2.5z" fill="#FBF7F2"/>
+      </svg>
+      <strong id="app-title">__TITLE__</strong>
+    </div>
     <div id="app-controls">
-      <button id="themeToggle" type="button" class="ghost" aria-label="Toggle dark mode">&#9788;</button>
-      <button id="exportBtn" type="button" class="ghost">Export backup</button>
-      <button id="importBtn" type="button" class="ghost">Import backup</button>
+      <button id="themeToggle" type="button" class="icon-btn" aria-label="Toggle dark mode" title="Light / dark">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+      </button>
+      <button id="exportBtn" type="button" class="icon-btn" aria-label="Export backup" title="Export backup">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 19.5h15"/></svg>
+        <span class="label">Export</span>
+      </button>
+      <button id="importBtn" type="button" class="icon-btn" aria-label="Import backup" title="Import backup">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M4.5 19.5h15"/></svg>
+        <span class="label">Import</span>
+      </button>
       <input id="importFile" type="file" accept="application/json" hidden>
     </div>
   </header>

@@ -46,7 +46,7 @@
         if (!nm) return C.setError(fName, 'Enter the guest’s name.');
         if (!(n >= 1 && n <= 20)) return C.setError(fParty, 'Enter between 1 and 20 people.');
         if (window.APP_DEMO_MODE && guests.length >= DEMO_GUEST_LIMIT) {
-          root.insertBefore(C.banner('warning', 'The demo is limited to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'), form);
+          form.parentNode.insertBefore(C.banner('warning', 'The demo is limited to ' + DEMO_GUEST_LIMIT + ' guests. The full version has no limit.'), form);
           return;
         }
         var all = D.list('guests');
@@ -54,7 +54,7 @@
         D.save('guests', all);
         App.views.guests.render(root);
       });
-      root.appendChild(form);
+      var side = h('div', { class: 'side' }, form);
 
       var listCard = h('div', { class: 'card' }, h('h2', { text: 'Guest list' }));
       if (!guests.length) {
@@ -91,7 +91,7 @@
           C.printSheet('Guest list — ' + t.yes + ' coming, ' + t.pending + ' waiting', pt);
         } } }));
       }
-      root.appendChild(listCard);
+      var main = h('div', { class: 'main' }, listCard);
 
       var tableNames = Object.keys(t.tables).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
       var tcard = h('div', { class: 'card' }, h('h2', { text: 'People per table' }));
@@ -101,7 +101,8 @@
         tableNames.forEach(function (n) { ul.appendChild(h('li', null, h('span', { text: 'Table ' + n }), h('strong', { text: String(t.tables[n]) }))); });
         tcard.appendChild(ul);
       }
-      root.appendChild(tcard);
+      side.appendChild(tcard);
+      root.appendChild(h('div', { class: 'split' }, side, main));
     },
   };
   App.nav.push('guests');

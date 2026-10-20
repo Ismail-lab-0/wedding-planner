@@ -42,6 +42,24 @@
     },
   };
 
+  /* Mobile menu: the nav collapses into a drop-down under the header below 680px. */
+  var menuBtn = document.getElementById('menuToggle');
+  App.ui.closeMenu = function () {
+    document.body.classList.remove('menu-open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.setAttribute('aria-label', 'Open menu');
+  };
+  menuBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = document.body.classList.toggle('menu-open');
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  document.addEventListener('click', function (e) {
+    if (document.body.classList.contains('menu-open') && !e.target.closest('#view-nav')) App.ui.closeMenu();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') App.ui.closeMenu(); });
+
   function applyTheme() {
     var theme = App.store.get('theme', 'light');
     document.documentElement.setAttribute('data-theme', theme);
