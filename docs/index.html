@@ -342,6 +342,27 @@ li { flex-wrap: wrap; }
 
 @media (min-width: 681px) { #view-nav { min-height: calc(100vh - 61px); } }
 
+/* ---------- Tables: nowrap action columns; stacked cards on phones ---------- */
+table.table td:last-child { white-space: nowrap; }
+table.table.cardrows td.neg, table.table.cardrows td[data-label="Left to spend"] { white-space: nowrap; }
+/* Budget's table is wide; keep it full width until there is room for a side column. */
+@media (min-width: 981px) and (max-width: 1599px) { .split.late { grid-template-columns: 1fr; } .split.late > .side { position: static; order: 2; } }
+@media (max-width: 680px) {
+  table.table.cardrows thead { display: none; }
+  table.table.cardrows, table.table.cardrows tbody { display: block; }
+  table.table.cardrows tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-border); }
+  table.table.cardrows td { display: block; border: 0; padding: 0; min-width: 0; }
+  table.table.cardrows td::before { content: attr(data-label); display: block; font-size: var(--text-xs); color: var(--color-muted); text-transform: uppercase; letter-spacing: .04em; }
+  table.table.cardrows td:first-child { grid-column: 1 / -1; font-weight: 700; font-size: var(--text-base); }
+  table.table.cardrows td:first-child::before, table.table.cardrows td:empty { display: none; }
+  table.table.cardrows td:last-child { grid-column: 1 / -1; }
+  table.table.cardrows td:last-child::before { display: none; }
+  table.table.cardrows td select { width: 100%; }
+  table.table.cardrows input.cell-input { width: 100%; }
+  table.table.cardrows tr.total-row td:first-child { font-size: var(--text-lg); }
+  table.table.cardrows tbody tr:hover { background: transparent; }
+}
+
 </style>
 </head>
 <body>
@@ -587,7 +608,15 @@ window.APP_DEMO_MODE = true;
   function emptyState(title, text) {
     return h('div', { class: 'empty-state' }, h('strong', { text: title }), text ? h('span', { text: text }) : null);
   }
-  function tableWrap(table) { return h('div', { class: 'table-scroll' }, table); }
+  /** Wraps a table for horizontal scroll and copies each header into its cells' data-label,
+   *  which the phone layout uses to show every row as a labelled card (see 02_wedding.css). */
+  function tableWrap(table) {
+    var heads = Array.prototype.map.call(table.querySelectorAll('thead th'), function (th) { return th.textContent; });
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute('data-label', heads[i]); });
+    });
+    return h('div', { class: 'table-scroll' }, table);
+  }
 
   /** Native <dialog> confirm. Resolves true on confirm. */
   function confirmDialog(title, message, confirmLabel) {
@@ -887,7 +916,7 @@ window.APP_DEMO_MODE = true;
         tbody.appendChild(h('tr', { class: 'total-row' },
           h('td', { text: 'Total' }), h('td', { text: C.fmt(t.est) }), h('td', { text: C.fmt(t.actual) }),
           h('td', { text: C.fmt(t.paid) }), h('td', { text: C.fmt(t.est - t.actual) + ' left' }), h('td')));
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Category', 'Estimated', 'Actual', 'Paid', 'Left to spend', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
@@ -908,7 +937,7 @@ window.APP_DEMO_MODE = true;
         D.save('budget', all);
         App.views.budget.render(root);
       });
-      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), main));
+      root.appendChild(h('div', { class: 'split late' }, h('div', { class: 'side' }, add), main));
     },
   };
   App.nav.push('budget');
@@ -994,7 +1023,7 @@ window.APP_DEMO_MODE = true;
           tbody.appendChild(h('tr', null, h('td', { text: x.name }), h('td', { text: String(x.party || 1) }), h('td', null, sel),
             h('td', { text: x.meal || '—' }), h('td', { text: x.table || '—' }), h('td', { class: 'no-print' }, del)));
         });
-        var tbl = h('table', { class: 'table', id: 'guestTable-list' },
+        var tbl = h('table', { class: 'table cardrows', id: 'guestTable-list' },
           h('thead', null, h('tr', null, ['Name', 'People', 'RSVP', 'Meal', 'Table', ''].map(function (x) { return h('th', { text: x }); }))), tbody);
         listCard.appendChild(C.tableWrap(tbl));
         listCard.appendChild(h('button', { type: 'button', id: 'printGuestsBtn', class: 'ghost', text: 'Print guest list', on: { click: function () {
@@ -1098,7 +1127,7 @@ window.APP_DEMO_MODE = true;
             h('td', { class: overdue ? 'neg' : '', text: v.due ? C.fmtDate(C.parseISO(v.due)) + (overdue ? ' (overdue)' : '') : '—' }),
             h('td', null, paid), h('td', null, del)));
         });
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Vendor', 'Contact', 'Quote', 'Deposit', 'Due', 'Paid', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
@@ -1240,7 +1269,7 @@ window.APP_DEMO_MODE = true;
           });
           tbody.appendChild(h('tr', null, h('td', { class: 'nowrap', text: fmtTime(e.time) }), h('td', { text: e.title }), h('td', { text: e.note || '' }), h('td', null, del)));
         });
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Time', 'Event', 'Note', ''].map(function (x) { return h('th', { text: x }); }))), tbody)));
         card.appendChild(h('button', { type: 'button', id: 'printTimelineBtn', class: 'ghost', text: 'Print timeline', on: { click: function () {
           var pt = h('table', { class: 'table' },

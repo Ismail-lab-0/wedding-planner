@@ -58,7 +58,7 @@
           });
           tbody.appendChild(h('tr', null, h('td', { class: 'nowrap', text: fmtTime(e.time) }), h('td', { text: e.title }), h('td', { text: e.note || '' }), h('td', null, del)));
         });
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Time', 'Event', 'Note', ''].map(function (x) { return h('th', { text: x }); }))), tbody)));
         card.appendChild(h('button', { type: 'button', id: 'printTimelineBtn', class: 'ghost', text: 'Print timeline', on: { click: function () {
           var pt = h('table', { class: 'table' },

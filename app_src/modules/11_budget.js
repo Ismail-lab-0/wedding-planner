@@ -61,7 +61,7 @@
         tbody.appendChild(h('tr', { class: 'total-row' },
           h('td', { text: 'Total' }), h('td', { text: C.fmt(t.est) }), h('td', { text: C.fmt(t.actual) }),
           h('td', { text: C.fmt(t.paid) }), h('td', { text: C.fmt(t.est - t.actual) + ' left' }), h('td')));
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Category', 'Estimated', 'Actual', 'Paid', 'Left to spend', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }
@@ -82,7 +82,7 @@
         D.save('budget', all);
         App.views.budget.render(root);
       });
-      root.appendChild(h('div', { class: 'split' }, h('div', { class: 'side' }, add), main));
+      root.appendChild(h('div', { class: 'split late' }, h('div', { class: 'side' }, add), main));
     },
   };
   App.nav.push('budget');

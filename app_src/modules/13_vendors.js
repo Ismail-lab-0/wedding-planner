@@ -70,7 +70,7 @@
             h('td', { class: overdue ? 'neg' : '', text: v.due ? C.fmtDate(C.parseISO(v.due)) + (overdue ? ' (overdue)' : '') : '—' }),
             h('td', null, paid), h('td', null, del)));
         });
-        card.appendChild(C.tableWrap(h('table', { class: 'table' },
+        card.appendChild(C.tableWrap(h('table', { class: 'table cardrows' },
           h('thead', null, h('tr', null, ['Vendor', 'Contact', 'Quote', 'Deposit', 'Due', 'Paid', ''].map(function (x) { return h('th', { text: x }); }))),
           tbody)));
       }

@@ -149,7 +149,15 @@
   function emptyState(title, text) {
     return h('div', { class: 'empty-state' }, h('strong', { text: title }), text ? h('span', { text: text }) : null);
   }
-  function tableWrap(table) { return h('div', { class: 'table-scroll' }, table); }
+  /** Wraps a table for horizontal scroll and copies each header into its cells' data-label,
+   *  which the phone layout uses to show every row as a labelled card (see 02_wedding.css). */
+  function tableWrap(table) {
+    var heads = Array.prototype.map.call(table.querySelectorAll('thead th'), function (th) { return th.textContent; });
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute('data-label', heads[i]); });
+    });
+    return h('div', { class: 'table-scroll' }, table);
+  }
 
   /** Native <dialog> confirm. Resolves true on confirm. */
   function confirmDialog(title, message, confirmLabel) {

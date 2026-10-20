@@ -77,7 +77,7 @@
           tbody.appendChild(h('tr', null, h('td', { text: x.name }), h('td', { text: String(x.party || 1) }), h('td', null, sel),
             h('td', { text: x.meal || '—' }), h('td', { text: x.table || '—' }), h('td', { class: 'no-print' }, del)));
         });
-        var tbl = h('table', { class: 'table', id: 'guestTable-list' },
+        var tbl = h('table', { class: 'table cardrows', id: 'guestTable-list' },
           h('thead', null, h('tr', null, ['Name', 'People', 'RSVP', 'Meal', 'Table', ''].map(function (x) { return h('th', { text: x }); }))), tbody);
         listCard.appendChild(C.tableWrap(tbl));
         listCard.appendChild(h('button', { type: 'button', id: 'printGuestsBtn', class: 'ghost', text: 'Print guest list', on: { click: function () {
