@@ -42,3 +42,5 @@ li { flex-wrap: wrap; }
   body.printing .table { font-size: 12pt; }
   body.printing table.table th, body.printing table.table td { border-bottom: 1px solid #999; color: #000; }
 }
+
+#view-nav button { white-space: nowrap; }
